@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>QR Code Generator</title>
+  <style>
+    body{font-family:system-ui,Arial,sans-serif;max-width:720px;margin:40px auto;padding:0 16px}
+    .card{border:1px solid #e5e7eb;border-radius:14px;padding:16px}
+    label{display:block;margin:10px 0 6px}
+    input,select,button{font-size:16px;padding:10px;border:1px solid #d1d5db;border-radius:10px}
+    button{cursor:pointer}
+    .row{display:flex;gap:10px;flex-wrap:wrap}
+    #qrcode{display:grid;place-items:center;min-height:260px;border:1px dashed #e5e7eb;border-radius:12px;margin-top:12px;padding:12px}
+    small{color:#6b7280}
+  </style>
+</head>
+<body>
+  <h1>QR Code Generator</h1>
+  <div class="card">
+    <label for="url">ลิงก์ (URL)</label>
+    <input id="url" type="url" placeholder="วางลิงก์ที่นี่ เช่น https://example.com" style="width:100%" />
+
+    <div class="row" style="margin-top:12px">
+      <div>
+        <label for="size">ขนาด</label>
+        <select id="size">
+          <option value="256">256 px</option>
+          <option value="384">384 px</option>
+          <option value="512" selected>512 px</option>
+          <option value="768">768 px</option>
+        </select>
+      </div>
+      <div>
+        <label for="ecc">Error Correction</label>
+        <select id="ecc">
+          <option value="L">L (เล็กสุด)</option>
+          <option value="M" selected>M</option>
+          <option value="Q">Q</option>
+          <option value="H">H (ทนเสียหายสุด)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:12px">
+      <button id="gen">สร้าง QR</button>
+      <button id="download" disabled>ดาวน์โหลด PNG</button>
+      <button id="clear">ล้าง</button>
+    </div>
+
+    <div id="qrcode"></div>
+    <small>เคล็ดลับ: หากเป็นลิงก์ Google Drive ให้ตั้งแชร์เป็น “Anyone with the link: Viewer” เพื่อให้สแกนแล้วเปิดได้</small>
+  </div>
+
+  <!-- ใช้ไลบรารี qrcode.js ผ่าน CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+  <script>
+    const urlEl = document.getElementById('url');
+    const sizeEl = document.getElementById('size');
+    const eccEl  = document.getElementById('ecc');
+    const genBtn = document.getElementById('gen');
+    const dlBtn  = document.getElementById('download');
+    const clrBtn = document.getElementById('clear');
+    const box    = document.getElementById('qrcode');
+    let qr;
+
+    function makeQR() {
+      const text = (urlEl.value || '').trim();
+      if (!text) { alert('กรุณาใส่ URL ก่อน'); return; }
+      box.innerHTML = '';
+      qr = new QRCode(box, {
+        text,
+        width: +sizeEl.value,
+        height: +sizeEl.value,
+        correctLevel: QRCode.CorrectLevel[eccEl.value] || QRCode.CorrectLevel.M
+      });
+      // เปิดปุ่มดาวน์โหลดหลังวาดเสร็จเล็กน้อย
+      setTimeout(() => { dlBtn.disabled = false; }, 200);
+    }
+
+    function downloadPNG() {
+      // qrcode.js อาจสร้าง <canvas> หรือ <img>
+      const canvas = box.querySelector('canvas');
+      const img = box.querySelector('img');
+      let dataURL;
+      if (canvas) {
+        dataURL = canvas.toDataURL('image/png');
+      } else if (img && img.src) {
+        dataURL = img.src;
+      } else {
+        alert('ยังไม่มีภาพ QR');
+        return;
+      }
+      const a = document.createElement('a');
+      a.href = dataURL;
+      a.download = 'qrcode.png';
+      a.click();
+    }
+
+    function clearQR() {
+      box.innerHTML = '';
+      dlBtn.disabled = true;
+    }
+
+    genBtn.addEventListener('click', makeQR);
+    dlBtn.addEventListener('click', downloadPNG);
+    clrBtn.addEventListener('click', clearQR);
+
+    // กด Enter เพื่อสร้าง
+    urlEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') makeQR();
+    });
+  </script>
+</body>
+</html>
